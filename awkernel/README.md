@@ -4,7 +4,7 @@ This directory holds the re-measurement of GEDF on Awkernel for Fig. 4 and Secti
 
 ## Why the data was measured again
 
-The Awkernel data of 2026-02-27 came from a GEDF scheduler with three defects. The fixed scheduler is commit `6243e474` on the `fix/gedf-dag-instance-deadline` branch of the fork atsushi421/awkernel. tier4/awkernel merged the fix as PR #715 (commit `abbd2095`), which differs from `6243e474` only in the panic messages of `dag.rs`. The defects were the following:
+The Awkernel data of 2026-02-27 came from a GEDF scheduler with three defects. tier4/awkernel merged the fix as PR #715 (commit `abbd2095`). The images of this data used commit `6243e474` of the fork atsushi421/awkernel, which differs from `abbd2095` only in the panic messages of `dag.rs`. The defects were the following:
 
 - It added the relative deadline in milliseconds to a clock in microseconds.
 - It derived the DAG deadline again whenever the source subtask woke up.
@@ -14,7 +14,7 @@ TU is the summed CPU load of the three DAGs of a case. The Awkernel run at TU=1.
 
 ## Changes in the measurement image
 
-`measurement/build_images.sh` clones Awkernel at `6243e474` and applies the following changes:
+`measurement/build_images.sh` clones tier4/awkernel at `abbd2095` and applies the following changes. To build the images of this data, set `AWKERNEL_REPO=https://github.com/atsushi421/awkernel.git` and `COMMIT=6243e474`.
 
 - `rd_gen_to_dags` loads the three RD-Gen DAGs of one case and schedules them with `SchedulerType::GEDF(0)`.
 - `patch_sink_end.py` records the end timestamp after the sink function runs. The response time then runs from the source start to the sink end. The data of 2026-02-27 and the ROS 2 and YASMIN baselines use the same definition.

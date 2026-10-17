@@ -57,7 +57,7 @@ python3 scripts/run_trajectory_evaluation.py
 
 To measure again, follow `awkernel/README.md`, `ros2/README.md`, and `yasmin/README.md`.
 
-Fig. 4 uses commit `6243e474` on the `fix/gedf-dag-instance-deadline` branch of the fork atsushi421/awkernel. tier4/awkernel merged this fix as PR #715 (commit `abbd2095`). The two commits differ only in the panic messages of `dag.rs`.
+`awkernel/measurement/build_images.sh` builds tier4/awkernel at commit `abbd2095`, which merged the GEDF fix as PR #715. The data of Fig. 4 came from commit `6243e474` of the fork atsushi421/awkernel. The two commits differ only in the panic messages of `dag.rs`.
 
 ## Third-party code
 

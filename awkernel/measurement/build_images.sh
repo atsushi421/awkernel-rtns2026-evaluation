@@ -1,6 +1,6 @@
 #!/bin/bash
 # Builds measurement images of the fixed GEDF scheduler of Awkernel
-# (fix/gedf-dag-instance-deadline, commit 6243e474). Each image runs one DAG
+# (tier4/awkernel commit abbd2095, PR #715). Each image runs one DAG
 # set of the RTNS 2026 response-time comparison and sends the DAG timestamp
 # table to the PC over UDP, so that no UART connection is needed.
 #
@@ -8,16 +8,18 @@
 #   bash build_images.sh qemu   one QEMU aarch64 virt image for testing
 #
 # Environment variables:
-#   AWKERNEL_REPO  repository to clone (default: the fork atsushi421/awkernel,
-#                  which holds commit 6243e474)
+#   AWKERNEL_REPO  repository to clone (default: tier4/awkernel on GitHub)
+#   COMMIT         commit to build (default: abbd2095). The images of the paper
+#                  used commit 6243e474 of the fork atsushi421/awkernel, which
+#                  differs from abbd2095 only in the panic messages of dag.rs.
 #   WORK           work directory (default: ./work next to this script)
 #   OBJCOPY        objcopy for the raw image (default: llvm-objcopy-18)
 set -euo pipefail
 
 HERE=$(cd "$(dirname "$0")" && pwd)
 MODE=${1:-raspi}
-AWKERNEL_REPO=${AWKERNEL_REPO:-https://github.com/atsushi421/awkernel.git}
-COMMIT=6243e474
+AWKERNEL_REPO=${AWKERNEL_REPO:-https://github.com/tier4/awkernel.git}
+COMMIT=${COMMIT:-abbd2095}
 WORK=${WORK:-$HERE/work}
 SRC=$WORK/awkernel
 OUT=$WORK/images
@@ -44,7 +46,7 @@ fi
 mkdir -p "$WORK"
 [ -d "$SRC" ] || git clone --quiet "$AWKERNEL_REPO" "$SRC"
 cd "$SRC"
-git cat-file -e "$COMMIT^{commit}" 2>/dev/null || git fetch --quiet origin fix/gedf-dag-instance-deadline
+git cat-file -e "$COMMIT^{commit}" 2>/dev/null || git fetch --quiet origin
 git checkout --quiet --force "$COMMIT"
 git checkout --quiet -- .
 rm -f applications/rd_gen_to_dags/src/report.rs
