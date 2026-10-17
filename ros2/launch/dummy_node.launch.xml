@@ -1,0 +1,6 @@
+<launch>
+    <node_container pkg="agnocast_components" exec="agnocast_component_container_cie" name="dummy_node_container" namespace="">
+        <composable_node pkg="ros2_task_set" plugin="DummyNode" name="dummy_node" namespace="">
+        </composable_node>
+    </node_container>
+</launch>

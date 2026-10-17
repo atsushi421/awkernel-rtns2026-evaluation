@@ -1,0 +1,86 @@
+diff --git a/lib/src/job_pool.c b/lib/src/job_pool.c
+index 016e9a6..8d3cbc5 100644
+--- a/lib/src/job_pool.c
++++ b/lib/src/job_pool.c
+@@ -167,6 +167,11 @@ void y_job_pool_pop_nonblock_if_higher_priority(volatile y_task_pool_t *pool, ya
+     }
+     if(__builtin_expect(yas_is_higher_priority(pool->q_elt_pool[1].key, priority), TRUE))
+         _y_job_pool_pop_unblocked(pool, job);
++    else
++        /* Not popping: restore the semaphore, otherwise the queued task
++         * becomes invisible to blocking pops and is stranded until the next
++         * push wakes a worker. */
++        y_sem_post((y_sem_t *)&pool->cancons);
+     y_job_pool_unlock_queue(pool);
+ }
+ 
+diff --git a/lib/src/scheduler_online.c b/lib/src/scheduler_online.c
+index 4a40211..a6c35e3 100644
+--- a/lib/src/scheduler_online.c
++++ b/lib/src/scheduler_online.c
+@@ -235,6 +235,13 @@ static void y_periodic_task_scheduler(int sig) {
+ #endif
+         if(yas_utils_cmp_time(task->period, elapsed) <= 0) {
+             task->last_activation =  glob_online_mgnt.sched_clock;
++#ifdef __INTERNAL_YAS_PRIO_EDF
++            /* EDF priority = absolute deadline of the released job.
++             * yas_priority_t is yas_time_t under EDF (see yasmin_utils.h);
++             * the vanilla code never assigns a priority under EDF, leaving
++             * every task at YAS_LOWEST_PRIORITY. */
++            task->priority = task->last_activation + task->deadline;
++#endif
+             glob_online_mgnt.tmp_task_to_add[glob_online_mgnt.added_size] = task;
+             ++glob_online_mgnt.added_size;
+         }
+@@ -595,6 +602,12 @@ static void y_activate_task(yas_intern_task_t *task) {
+     y_thread_pool_lock_queue();
+     y_thread_pool_push(task);
+     y_thread_pool_unlock_queue();
++#if YAS_PREEMPTION_MODEL == YAS_SCHED_PREEMPTIVE
++    /* The vanilla code requests preemption only from the periodic scheduler,
++     * so a data-driven activation could not preempt a running lower-priority
++     * task until the next period boundary. */
++    y_worker_thread_sched_notify();
++#endif
+ }
+ 
+ void yas_task_activate(yas_task_id_t id) {
+@@ -704,6 +717,12 @@ static void y_channel_check(base_channel_t *chan) {
+         }
+     }
+     if(fireable) {
++#ifdef __INTERNAL_YAS_PRIO_EDF
++        /* GEDF for DAG tasks (Li et al.): every subtask of a job shares the
++         * job's absolute deadline, so a data-driven sink inherits the
++         * priority of the producer that enabled it. */
++        chan->sink->priority = chan->src->priority;
++#endif
+         y_activate_task(chan->sink);
+     }
+ }
+diff --git a/lib/src/utils.c b/lib/src/utils.c
+index b861629..0edcd06 100644
+--- a/lib/src/utils.c
++++ b/lib/src/utils.c
+@@ -48,16 +48,12 @@ void yas_utils_nanosleep(yas_time_t wait) {
+      
+     
+     twait.tv_sec = (__syscall_slong_t)(wait / 1000000000);
+-    twait.tv_nsec = (__syscall_slong_t)(wait % 999999999);
+-    if(twait.tv_nsec > 1000000000) {
+-        ++twait.tv_sec;
+-        twait.tv_nsec -= 1000000000;
+-    }
+-    
++    twait.tv_nsec = (__syscall_slong_t)(wait % 1000000000);
++
++    /* The vanilla code additionally busy-waited another `wait` after the
++     * clock_nanosleep returned, making every sleep last twice the requested
++     * duration (the periodic scheduler would then release at half rate). */
+     while(clock_nanosleep(YAS_CLOCK, 0, &twait, &twait) == EINTR) ;
+-    
+-    yas_time_t tresume = yas_utils_now() + wait;
+-    while(yas_utils_now() < tresume) y_sync_atomic_fence();
+ }
+ 
+ yas_time_t y_utils_gcd_time(yas_time_t a, yas_time_t b) {

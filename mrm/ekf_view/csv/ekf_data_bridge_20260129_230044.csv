@@ -1,0 +1,2 @@
+timestamp,pos_x,pos_y,pos_z,ori_x,ori_y,ori_z,ori_w,vel_x,vel_y,vel_z,ang_x,ang_y,ang_z,pose_cov_0,pose_cov_5,pose_cov_10,twist_cov_0,twist_cov_5,twist_cov_10
+5.602471587,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.046559,0.0,0.0,0.0,0.0,0.0,0.0225,0.0,0.0,0.01,0.0,0.0

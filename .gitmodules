@@ -1,0 +1,3 @@
+[submodule "ros2/agnocast"]
+	path = ros2/agnocast
+	url = https://github.com/autowarefoundation/agnocast.git
